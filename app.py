@@ -53,9 +53,11 @@ max_wind_kw = int(df_wind_train["설비용량(kW)"].max())
 
 solar_kw = st.sidebar.number_input("☀️ 태양광 설비용량", 50, max_solar_kw, 300, 50)
 wind_kw = st.sidebar.number_input("💨 풍력 설비용량", 50, max_wind_kw, 300, 50)
-area_per_kw = st.sidebar.slider("1kW당 필요한 면적 (㎡)", 10, 30, 23)
 
-min_area = min(solar_kw, wind_kw) * area_per_kw
+# ✅ 태양광·풍력 각기 다른 면적 기준 설정
+solar_area_per_kw = st.sidebar.slider("☀️ 태양광: 1kW당 필요한 면적 (㎡)", 10, 30, 23)
+wind_area_per_kw = st.sidebar.slider("💨 풍력: 1kW당 필요한 면적 (㎡)", 10, 30, 23)
+
 selected_sources = st.sidebar.multiselect("📡 발전 종류 선택", ["태양광", "풍력"], default=["태양광", "풍력"])
 selected_grades = st.sidebar.multiselect("🏷️ 추천 등급 필터", ["매우 추천", "추천", "확인 필요", "비추천"],
                                          default=["매우 추천", "추천", "확인 필요", "비추천"])
@@ -81,15 +83,24 @@ def compute_quartiles(_model, train_df, features, capacity_kw):
     preds = _model.predict(X)
     return np.percentile(preds, [25, 50, 75])
 
-def predict_and_label(model, features, train_df, idle_df, capacity_kw, q1, q2, q3):
+def predict_and_label(model, features, train_df, idle_df, capacity_kw, q1, q2, q3, area_per_kw):
+    # 면적 기준 필터 적용
     df = idle_df[idle_df["면적(m^2)"] >= capacity_kw * area_per_kw].copy()
-    df["설비용량(kW)"] = capacity_kw
+
+    # 설비용량 피처 보정
+    if "설비용량" in features:
+        df["설비용량"] = capacity_kw
+    if "설비용량(kW)" in features:
+        df["설비용량(kW)"] = capacity_kw
+
     for col in features:
         if col not in df.columns:
             df[col] = 0
+
     df = df.dropna(subset=features)
     X = pd.DataFrame(SimpleImputer().fit_transform(df[features]), columns=features)
     preds = model.predict(X)
+
     df["예측_발전량(kWh)"] = preds
     df["추천등급"] = label_sites(preds, q1, q2, q3)
     return df
@@ -98,8 +109,15 @@ def predict_and_label(model, features, train_df, idle_df, capacity_kw, q1, q2, q
 solar_q1, solar_q2, solar_q3 = compute_quartiles(model_solar, df_solar_train, solar_features, solar_kw)
 wind_q1, wind_q2, wind_q3 = compute_quartiles(model_wind, df_wind_train, wind_features, wind_kw)
 
-df_solar_result = predict_and_label(model_solar, solar_features, df_solar_train, df_idle, solar_kw, solar_q1, solar_q2, solar_q3)
-df_wind_result = predict_and_label(model_wind, wind_features, df_wind_train, df_idle, wind_kw, wind_q1, wind_q2, wind_q3)
+df_solar_result = predict_and_label(
+    model_solar, solar_features, df_solar_train, df_idle,
+    solar_kw, solar_q1, solar_q2, solar_q3, solar_area_per_kw
+)
+
+df_wind_result = predict_and_label(
+    model_wind, wind_features, df_wind_train, df_idle,
+    wind_kw, wind_q1, wind_q2, wind_q3, wind_area_per_kw
+)
 
 # -------------------------------
 # 📊 요약 정보
@@ -129,7 +147,18 @@ df_filtered = df_all[
     df_all["발전종류"].isin(selected_sources) &
     df_all["추천등급"].isin(selected_grades)
 ]
+# 📊 전체 예측 결과 분포 요약
+st.subheader("📌 전체 예측 결과 분포 (에너지원·추천등급별)")
 
+summary_counts = (
+    df_all
+    .groupby(["발전종류", "추천등급"])
+    .size()
+    .reset_index(name="부지 개수")
+    .sort_values(["발전종류", "추천등급"])
+)
+
+st.dataframe(summary_counts)
 # -------------------------------
 # 🗺️ 지도 시각화
 st.subheader("🗺️ 추천 유휴부지 위치 (필터 반영됨)")
