@@ -8,3 +8,4 @@ joblib
 openpyxl
 folium
 streamlit-folium
+matplotlib
