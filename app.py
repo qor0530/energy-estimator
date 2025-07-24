@@ -92,14 +92,12 @@ agg_df["색상"] = agg_df.apply(
 )
 # -------------------------------
 # 🗺️ 지도 출력
+st.caption("⚠️ 범례가 보이지 않으면 새로고침해주세요. PC환경에서 개발되서 모바일에서는 범례 및 상세 분석 그래프가 보이지 않을 수 있습니다.")
+st.caption("⚠️ 실제 발전량·수익과는 다를 수 있습니다.")
 st.subheader("🗺️ 추천 유휴부지 위치")
-st.caption("⚠️ 범례가 보이지 않으면 새로고침해주세요")
-
 m = create_site_map(agg_df, selected_sources)
 st_data = st_folium(m, width=1000, height=600)
 
-st.caption("⚠️ 색상은 연간 평균 추천등급 기준입니다.")
-st.caption("⚠️ 실제 발전량·수익과는 다를 수 있습니다.")
 # -------------------------------
 # 📋 상세 출력 (클릭 시)
 if st_data and st_data.get("last_object_clicked_tooltip"):
