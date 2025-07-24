@@ -59,12 +59,12 @@ def create_site_map(df, selected_sources):
             <b>☀️ 태양광</b><br>
             • 발전량: {row['태양광_연간_총_발전량(kWh)']:.1f} kWh<br>
             • 추천등급: <span style='color:darkorange'>{row['태양광_추천등급']}</span><br>
-            • 예상수익: {row['태양광_예상수익(원)']:.0f} 원<br>
+            • 예상수익: {row.get('태양광_예상수익(원)', 0):,.0f} 원<br>
             <hr style='margin:4px 0;'>
             <b>💨 풍력</b><br>
             • 발전량: {row['풍력_연간_총_발전량(kWh)']:.1f} kWh<br>
             • 추천등급: <span style='color:darkblue'>{row['풍력_추천등급']}</span><br>
-            • 예상수익: {row['풍력_예상수익(원)']:.0f} 원
+            • 예상수익: {row.get('풍력_예상수익(원)', 0):,.0f} 원
         </div>
         """
 
