@@ -63,7 +63,14 @@ agg_df = merged.groupby(["재산 소재지", "위도", "경도"]).agg({
     "태양광_월간_발전량(kWh)": "태양광_연간_총_발전량(kWh)",
     "풍력_월간_발전량(kWh)": "풍력_연간_총_발전량(kWh)"
 })
+from visualization.map_utils import calculate_revenue
 
+agg_df["태양광_예상수익(원)"] = agg_df.apply(
+    lambda row: calculate_revenue(row, "태양광_연간_총_발전량(kWh)"), axis=1
+)
+agg_df["풍력_예상수익(원)"] = agg_df.apply(
+    lambda row: calculate_revenue(row, "풍력_연간_총_발전량(kWh)"), axis=1
+)
 # -------------------------------
 # 📏 연간 발전량 기준 분위수 → 추천등급
 solar_q1, solar_q2, solar_q3 = np.percentile(agg_df["태양광_연간_총_발전량(kWh)"], [25, 50, 75])
@@ -98,7 +105,12 @@ if st_data and st_data.get("last_object_clicked_tooltip"):
     with col2:
         st.bar_chart(detail_df.set_index("날짜")["풍력_월간_발전량(kWh)"])
 
-    st.dataframe(detail_df)
+    selected_columns = [
+    "재산 소재지", "위도", "경도", "날짜",
+    "태양광_월간_발전량(kWh)", "풍력_월간_발전량(kWh)",
+    "추천등급_solar", "추천등급_wind"
+    ]
+    st.dataframe(detail_df[selected_columns])
 
 # -------------------------------
 # 📈 전체 통계 및 TOP10 출력
@@ -114,6 +126,3 @@ with col2:
     st.dataframe(agg_df.sort_values("풍력_연간_총_발전량(kWh)", ascending=False).head(10))
 
 # -------------------------------
-# 📑 월별 상세 데이터 테이블
-st.subheader("📅 월별 유휴부지 예측 데이터")
-st.dataframe(merged.sort_values(["재산 소재지", "날짜"]))

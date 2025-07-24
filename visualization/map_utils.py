@@ -4,6 +4,25 @@ import folium
 from branca.element import Template, MacroElement
 from folium.plugins import BeautifyIcon
 
+# 지역별 SMP 단가
+SMP_DICT = {
+    "육지": 123.06,
+    "제주": 123.88
+}
+
+# 주소에서 지역 구분 함수
+def check_region(address):
+    if str(address).startswith("제주특별자치도"):
+        return "제주"
+    else:
+        return "육지"
+
+# 예상 수익 계산 함수
+def calculate_revenue(row, colname):
+    region = check_region(row["재산 소재지"])
+    smp_price = SMP_DICT.get(region, 0)
+    return row[colname] * smp_price
+
 # 색상 결정 로직 (선택된 발전 종류에 따라 동작)
 def 추천색상(등급_태양광, 등급_풍력, selected_sources):
     if selected_sources == ["태양광"]:
@@ -34,11 +53,20 @@ def create_site_map(df, selected_sources):
     m = folium.Map(location=map_center, zoom_start=7)
 
     for _, row in df.iterrows():
-        popup_text = (
-            f"{row['재산 소재지']}<br>"
-            f"☀️ 태양광: {row['태양광_연간_총_발전량(kWh)']:.1f} kWh ({row['태양광_추천등급']})<br>"
-            f"💨 풍력: {row['풍력_연간_총_발전량(kWh)']:.1f} kWh ({row['풍력_추천등급']})"
-        )
+        popup_text = f"""
+        <div style='font-size:14px; line-height:1.6;'>
+            <b>{row['재산 소재지']}</b><br>
+            <b>☀️ 태양광</b><br>
+            • 발전량: {row['태양광_연간_총_발전량(kWh)']:.1f} kWh<br>
+            • 추천등급: <span style='color:darkorange'>{row['태양광_추천등급']}</span><br>
+            • 예상수익: {row['태양광_예상수익(원)']:.0f} 원<br>
+            <hr style='margin:4px 0;'>
+            <b>💨 풍력</b><br>
+            • 발전량: {row['풍력_연간_총_발전량(kWh)']:.1f} kWh<br>
+            • 추천등급: <span style='color:darkblue'>{row['풍력_추천등급']}</span><br>
+            • 예상수익: {row['풍력_예상수익(원)']:.0f} 원
+        </div>
+        """
 
         icon_type = "sun" if row.get("추천종류", "") == "태양광" else "leaf"
         icon = BeautifyIcon(
@@ -58,7 +86,7 @@ def create_site_map(df, selected_sources):
         folium.Marker(
             location=[row["위도"], row["경도"]],
             tooltip=row["재산 소재지"],
-            popup=popup_text,
+            popup=folium.Popup(popup_text, max_width=300),
             icon=icon
         ).add_to(m)
 
@@ -129,7 +157,7 @@ def get_map_legend(selected_sources):
         <span style='color:green'>●</span> 동일 추천 등급<br>
         <span style='color:orange'>●</span> 태양광 우세<br>
         <span style='color:lightblue'>●</span> 풍력 우세<br>
-        <span style='color:gray'>●</span> 확인 필요
+        <span style='color:gray'>●</span> 기타
         </div>
         {% endmacro %}
         """

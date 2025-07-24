@@ -47,12 +47,10 @@ def predict_and_label(_model, features, train_df, idle_df, capacity_kw, area_per
     preds = _model.predict(X)
     preds = np.clip(preds, 0, None)
 
-    annual_preds = preds * 12
     df["예측_발전량(kWh)"] = preds
-    df["연간_예측_발전량(kWh)"] = annual_preds
 
-    # ✅ 유휴부지 기준 분위수 계산 및 라벨링
-    q1, q2, q3 = np.percentile(annual_preds, [25, 50, 75])
-    df["추천등급"] = label_sites(annual_preds, q1, q2, q3)
+    # ✅ 유휴부지 기준 분위수 계산 및 라벨링 (월 기준)
+    q1, q2, q3 = np.percentile(preds, [25, 50, 75])
+    df["추천등급"] = label_sites(preds, q1, q2, q3)
 
     return df
