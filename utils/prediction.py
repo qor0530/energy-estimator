@@ -30,7 +30,8 @@ def compute_quartiles(_model, train_df, features, capacity_kw):
 # 예측 및 추천등급 라벨링
 
 def predict_and_label(_model, features, train_df, idle_df, capacity_kw, area_per_kw):
-    df = idle_df[idle_df["면적(m₂)"] >= capacity_kw * area_per_kw].copy()
+    area_col = [col for col in idle_df.columns if "면적" in col][0]
+    df = idle_df[idle_df[area_col] >= capacity_kw * area_per_kw].copy()
 
     if "설비용량" in features:
         df["설비용량"] = capacity_kw
