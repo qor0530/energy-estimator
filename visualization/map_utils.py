@@ -30,14 +30,26 @@ def 추천색상(등급_태양광, 등급_풍력, selected_sources):
     elif selected_sources == ["풍력"]:
         return 추천색상_단일(등급_풍력)
     else:
+        # 둘 다 같은 경우 -> 높은 등급 기준으로 색상
         if 등급_태양광 == 등급_풍력:
-            return "green"
-        elif 등급_태양광 in ["매우 추천", "추천"] and 등급_풍력 in ["확인 필요", "비추천"]:
-            return "orange"
-        elif 등급_풍력 in ["매우 추천", "추천"] and 등급_태양광 in ["확인 필요", "비추천"]:
-            return "lightblue"
-        else:
-            return "gray"
+            return 추천색상_단일(등급_태양광)
+
+        # 하나라도 "매우 추천" 또는 "추천"이 있으면 해당 색
+        우선순위 = {"매우 추천": 3, "추천": 2, "확인 필요": 1, "비추천": 0}
+        등급값 = {
+            "태양광": 우선순위.get(등급_태양광, 0),
+            "풍력": 우선순위.get(등급_풍력, 0)
+        }
+
+        if 등급값["태양광"] >= 2 or 등급값["풍력"] >= 2:
+            # 더 높은 등급 쪽으로 색상 결정
+            if 등급값["태양광"] >= 등급값["풍력"]:
+                return 추천색상_단일(등급_태양광)
+            else:
+                return 추천색상_단일(등급_풍력)
+
+        # 둘 다 낮은 경우 회색
+        return "gray"
 
 def 추천색상_단일(등급):
     return {
@@ -91,6 +103,7 @@ def create_site_map(df, selected_sources):
         ).add_to(m)
 
     m.get_root().add_child(get_map_legend(selected_sources))
+
     return m
 
 # 범례 생성 함수 (선택된 발전 종류에 따라 조정)
@@ -154,10 +167,10 @@ def get_map_legend(selected_sources):
             color: black;
         ">
         <b>📍 범례 (추천 비교 기준)</b><br>
-        <span style='color:green'>●</span> 동일 추천 등급<br>
+        <span style='color:green'>●</span> 동일 등급 또는 우수 등급 우세<br>
         <span style='color:orange'>●</span> 태양광 우세<br>
         <span style='color:lightblue'>●</span> 풍력 우세<br>
-        <span style='color:gray'>●</span> 기타
+        <span style='color:gray'>●</span> 기타 (모두 낮은 등급)
         </div>
         {% endmacro %}
         """
