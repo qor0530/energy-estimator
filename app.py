@@ -84,10 +84,10 @@ agg_df["색상"] = agg_df.apply(lambda x: 추천색상(x["태양광_추천등급
 
 # -------------------------------
 # 🗺️ 지도 출력
+st.caption("⚠️ 범례가 보이지 않으면 새로고침해주세요")
 st.subheader("🗺️ 추천 유휴부지 위치")
 m = create_site_map(agg_df, selected_sources)
 st_data = st_folium(m, width=1000, height=600)
-st.caption("⚠️ 범례가 보이지 않으면 새로고침해주세요")
 # -------------------------------
 # 📋 상세 출력 (클릭 시)
 if st_data and st_data.get("last_object_clicked_tooltip"):
